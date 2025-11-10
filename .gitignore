@@ -8,6 +8,9 @@
 *.so
 *.dylib
 
+# Build output directory
+bin/
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -24,9 +27,23 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# Environment files
 .env
+.env.local
+
+# Markdown files
+*.md
+
+# Makefile
+Makefile
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
