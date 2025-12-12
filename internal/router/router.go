@@ -9,19 +9,25 @@ import (
 func SetupRouter(log *logger.Logger) *gin.Engine {
 	router := gin.Default()
 
+	api := router.Group("/api")
+
 	healthHandler := handler.NewHealthHandler(log)
 
-	router.GET("/ping", healthHandler.Ping)
-
-	api := router.Group("/api")
-	{
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register")
-			auth.POST("/login")
-			auth.POST("/logout")
-		}
-	}
+	registerHealthRoutes(router, healthHandler)
+	registerAuthRoutes(api)
 
 	return router
+}
+
+func registerHealthRoutes(router *gin.Engine, h *handler.HealthHandler) {
+	router.GET("/ping", h.Ping)
+}
+
+func registerAuthRoutes(rg *gin.RouterGroup) {
+	auth := rg.Group("/auth")
+	{
+		auth.POST("/register")
+		auth.POST("/login")
+		auth.POST("/logout")
+	}
 }
