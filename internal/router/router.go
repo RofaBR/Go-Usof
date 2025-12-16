@@ -13,7 +13,10 @@ func SetupRouter(log *logger.Logger) *gin.Engine {
 
 	healthHandler := handler.NewHealthHandler(log)
 
-	registerHealthRoutes(router, healthHandler)
+	if gin.Mode() != gin.ReleaseMode {
+		registerHealthRoutes(router, healthHandler)
+	}
+
 	registerAuthRoutes(api)
 
 	return router
