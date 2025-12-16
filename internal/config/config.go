@@ -6,16 +6,18 @@ import (
 )
 
 type Config struct {
-	Port     string
-	LogLevel string // Log level: "debug", "info", "warn", "error"
-	Mode     string // Gin mode: "debug", "release", "test"
+	Port        string
+	LogLevel    string // Log level: "debug", "info", "warn", "error"
+	Mode        string // Gin mode: "debug", "release", "test"
+	DatabaseURL string
 }
 
 func New() (*Config, error) {
 	config := &Config{
-		Port:     getEnv("PORT", "8080"),
-		LogLevel: getEnv("LOG_LEVEL", "info"),
-		Mode:     getEnv("GIN_MODE", "debug"),
+		Port:        getEnv("PORT", "8080"),
+		LogLevel:    getEnv("LOG_LEVEL", "info"),
+		Mode:        getEnv("GIN_MODE", "debug"),
+		DatabaseURL: getEnv("DATABASE_URL", ""),
 	}
 
 	if err := config.validate(); err != nil {
@@ -38,6 +40,10 @@ func (c *Config) validate() error {
 	validModes := map[string]bool{"debug": true, "release": true, "test": true}
 	if !validModes[c.Mode] {
 		return fmt.Errorf("invalid mode: %s (must be debug, release, or test)", c.Mode)
+	}
+
+	if c.DatabaseURL == "" {
+		return fmt.Errorf("database URL is required")
 	}
 
 	return nil

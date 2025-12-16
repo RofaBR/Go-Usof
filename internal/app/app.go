@@ -8,6 +8,7 @@ import (
 
 	"github.com/RofaBR/Go-Usof/internal/config"
 	"github.com/RofaBR/Go-Usof/internal/router"
+	"github.com/RofaBR/Go-Usof/internal/storage/postgres"
 	"github.com/RofaBR/Go-Usof/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,7 @@ type App struct {
 	logger *logger.Logger
 	router *gin.Engine
 	server *http.Server
+	db     *postgres.Postgres
 }
 
 func New() (*App, error) {
@@ -27,6 +29,12 @@ func New() (*App, error) {
 
 	log := logger.New(cfg.LogLevel)
 	log.Info("initializing application")
+
+	log.Info("connecting to database")
+	db, err := postgres.Run(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
 
 	gin.SetMode(cfg.Mode)
 	r := router.SetupRouter(log)
@@ -41,6 +49,7 @@ func New() (*App, error) {
 		logger: log,
 		router: r,
 		server: server,
+		db:     db,
 	}, nil
 }
 
@@ -63,6 +72,9 @@ func (a *App) Shutdown(ctx context.Context) error {
 	if err := a.server.Shutdown(ctx); err != nil {
 		return fmt.Errorf("server shutdown error: %w", err)
 	}
+
+	a.logger.Info("closing database connection")
+	a.db.Close()
 
 	a.logger.Info("server stopped successfully")
 	return nil
