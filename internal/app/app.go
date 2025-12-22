@@ -7,7 +7,10 @@ import (
 	"net/http"
 
 	"github.com/RofaBR/Go-Usof/internal/config"
+	"github.com/RofaBR/Go-Usof/internal/handler"
+	"github.com/RofaBR/Go-Usof/internal/repositories"
 	"github.com/RofaBR/Go-Usof/internal/router"
+	"github.com/RofaBR/Go-Usof/internal/services"
 	"github.com/RofaBR/Go-Usof/internal/storage/postgres"
 	"github.com/RofaBR/Go-Usof/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -36,8 +39,17 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	log.Info("Initializing repositories")
+	repos := repositories.NewRepository(db)
+
+	log.Info("Initializing services")
+	svc := services.NewServices(log, repos)
+
+	log.Info("initializing handlers")
+	handlers := handler.NewHandler(log, svc)
+
 	gin.SetMode(cfg.Mode)
-	r := router.SetupRouter(log)
+	r := router.SetupRouter(log, handlers)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
