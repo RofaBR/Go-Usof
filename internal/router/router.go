@@ -6,31 +6,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(log *logger.Logger) *gin.Engine {
+func SetupRouter(log *logger.Logger, h *handler.Handler) *gin.Engine {
 	router := gin.Default()
 
 	api := router.Group("/api")
 
-	healthHandler := handler.NewHealthHandler(log)
-
 	if gin.Mode() != gin.ReleaseMode {
-		registerHealthRoutes(router, healthHandler)
+		registerHealthRoutes(router, h)
 	}
 
-	registerAuthRoutes(api)
+	registerAuthRoutes(api, h)
 
 	return router
 }
 
-func registerHealthRoutes(router *gin.Engine, h *handler.HealthHandler) {
-	router.GET("/ping", h.Ping)
+func registerHealthRoutes(router *gin.Engine, h *handler.Handler) {
+	router.GET("/ping", h.Health.Ping)
 }
 
-func registerAuthRoutes(rg *gin.RouterGroup) {
+func registerAuthRoutes(rg *gin.RouterGroup, h *handler.Handler) {
 	auth := rg.Group("/auth")
 	{
-		auth.POST("/register")
-		auth.POST("/login")
-		auth.POST("/logout")
+		auth.POST("/register", h.Auth.Register)
+		auth.POST("/login", h.Auth.Login)
+		auth.POST("/logout", h.Auth.Logout)
 	}
 }
