@@ -152,3 +152,11 @@ func (t *TokenService) generateRefreshToken(user *domain.User, jti string) (stri
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(t.config.RefreshSecret))
 }
+
+func (t *TokenService) RevokeToken(ctx context.Context, refreshToken string) error {
+	claims, err := t.ValidateRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return fmt.Errorf("invalid refresh token: %w", err)
+	}
+	return t.repo.DeleteRefreshToken(ctx, claims.JTI)
+}

@@ -94,5 +94,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No refresh token found"})
+		return
+	}
+
+	if err := h.service.Logout(c.Request.Context(), refreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Logout failed"})
+		return
+	}
+	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+	c.Status(http.StatusNoContent)
+}
+
+func (h *AuthHandler) Refresh(c *gin.Context) {
 
 }

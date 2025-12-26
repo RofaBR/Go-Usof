@@ -43,5 +43,5 @@ type TokenService interface {
 
 	//RefreshAccessToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 
-	//RevokeToken(ctx context.Context, accessToken, refreshToken string) error
+	RevokeToken(ctx context.Context, refreshToken string) error
 }
