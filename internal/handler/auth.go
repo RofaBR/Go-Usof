@@ -27,6 +27,11 @@ type LoginUserDTO struct {
 	Password string `json:"password" binding:"required,min=6,max=20"`
 }
 
+type AuthResponse struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+}
+
 type AuthHandler struct {
 	service *services.UserService
 }
@@ -66,12 +71,26 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := h.service.Login(c.Request.Context(), req.Login, req.Email, req.Password)
+	tokenPair, err := h.service.Login(c.Request.Context(), req.Login, req.Email, req.Password)
 	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+
+	c.SetCookie(
+		"refresh_token",
+		tokenPair.RefreshToken,
+		int(tokenPair.RefreshExpiresIn),
+		"/",
+		"",
+		false,
+		true,
+	)
+
+	c.JSON(http.StatusOK, AuthResponse{
+		AccessToken: tokenPair.AccessToken,
+		ExpiresIn:   tokenPair.ExpiresIn,
+	})
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {

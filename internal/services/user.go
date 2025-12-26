@@ -9,11 +9,15 @@ import (
 )
 
 type UserService struct {
-	repo domain.UserRepository
+	repo         domain.UserRepository
+	tokenService domain.TokenService
 }
 
-func NewUserService(repo domain.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo domain.UserRepository, tokenService domain.TokenService) *UserService {
+	return &UserService{
+		repo:         repo,
+		tokenService: tokenService,
+	}
 }
 
 func (s *UserService) Register(ctx context.Context, user *domain.User) error {
@@ -33,7 +37,7 @@ func (s *UserService) Register(ctx context.Context, user *domain.User) error {
 	return s.repo.Create(ctx, user)
 }
 
-func (s *UserService) Login(ctx context.Context, login, email, password string) (*domain.User, error) {
+func (s *UserService) Login(ctx context.Context, login, email, password string) (*domain.TokenPair, error) {
 	existing, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("check email failed: %w", err)
@@ -41,11 +45,19 @@ func (s *UserService) Login(ctx context.Context, login, email, password string) 
 	if existing == nil {
 		return nil, fmt.Errorf("user not found")
 	}
+	if login != existing.Login {
+		return nil, fmt.Errorf("invalid login")
+	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(existing.Password), []byte(password))
 	if err != nil {
 		return nil, fmt.Errorf("invalid password")
 	}
 
-	return existing, nil
+	tokenPair, err := s.tokenService.GenerateTokenPair(ctx, existing)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+	}
+
+	return tokenPair, nil
 }

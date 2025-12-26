@@ -12,6 +12,7 @@ import (
 	"github.com/RofaBR/Go-Usof/internal/router"
 	"github.com/RofaBR/Go-Usof/internal/services"
 	"github.com/RofaBR/Go-Usof/internal/storage/postgres"
+	"github.com/RofaBR/Go-Usof/internal/storage/redis"
 	"github.com/RofaBR/Go-Usof/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +23,7 @@ type App struct {
 	router *gin.Engine
 	server *http.Server
 	db     *postgres.Postgres
+	redis  *redis.Redis
 }
 
 func New() (*App, error) {
@@ -33,17 +35,23 @@ func New() (*App, error) {
 	log := logger.New(cfg.LogLevel)
 	log.Info("initializing application")
 
-	log.Info("connecting to database")
+	log.Info("connecting to PostgreSQL database")
 	db, err := postgres.Run(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	log.Info("connecting to Redis")
+	redisClient, err := redis.NewRedis(context.Background(), cfg.Redis)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to redis: %w", err)
+	}
+
 	log.Info("Initializing repositories")
-	repos := repositories.NewRepository(db)
+	repos := repositories.NewRepository(db, redisClient)
 
 	log.Info("Initializing services")
-	svc := services.NewServices(log, repos)
+	svc := services.NewServices(log, repos, cfg)
 
 	log.Info("initializing handlers")
 	handlers := handler.NewHandler(log, svc)
@@ -62,6 +70,7 @@ func New() (*App, error) {
 		router: r,
 		server: server,
 		db:     db,
+		redis:  redisClient,
 	}, nil
 }
 
@@ -87,6 +96,11 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	a.logger.Info("closing database connection")
 	a.db.Close()
+
+	a.logger.Info("closing redis connection")
+	if err := a.redis.Close(); err != nil {
+		a.logger.Error("failed to close redis connection", "error", err)
+	}
 
 	a.logger.Info("server stopped successfully")
 	return nil
