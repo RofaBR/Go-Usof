@@ -3,14 +3,17 @@ package repositories
 import (
 	"github.com/RofaBR/Go-Usof/internal/domain"
 	"github.com/RofaBR/Go-Usof/internal/storage/postgres"
+	"github.com/RofaBR/Go-Usof/internal/storage/redis"
 )
 
 type Repository struct {
-	User domain.UserRepository
+	User  domain.UserRepository
+	Token domain.TokenRepository
 }
 
-func NewRepository(db *postgres.Postgres) *Repository {
+func NewRepository(db *postgres.Postgres, rdb *redis.Redis) *Repository {
 	return &Repository{
-		User: NewUserRepository(db.Pool),
+		User:  NewUserRepository(db.Pool),
+		Token: NewTokenRepository(rdb.Client),
 	}
 }
