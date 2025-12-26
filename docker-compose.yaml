@@ -114,10 +114,36 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: usof-nocodb
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      NC_DB: "postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}"
+      NC_AUTH_JWT_SECRET: ${JWT_ACCESS_SECRET}
+      NC_ADMIN_EMAIL: ${NC_ADMIN_EMAIL}
+      NC_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD}
+      NC_DISABLE_TELE: true
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - usof-network
+    volumes:
+      - nocodb_data:/usr/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
 volumes:
   postgres_data:
   redis_data:
+  nocodb_data:
 
 networks:
   usof-network:
