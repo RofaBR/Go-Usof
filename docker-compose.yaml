@@ -15,6 +15,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       PORT: ${PORT:-8080}
       GIN_MODE: ${GIN_MODE:-release}
@@ -29,6 +31,12 @@ services:
       DB_NAME: ${DB_NAME}
       DB_SSLMODE: disable
       DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: 0
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     ports:
       - "${PORT:-8080}:8080"
     networks:
@@ -91,9 +99,25 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+  redis:
+    image: redis:latest
+    container_name: usof-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - usof-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   usof-network:
