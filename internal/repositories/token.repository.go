@@ -65,3 +65,15 @@ func (t *TokenRepository) DeleteRefreshToken(ctx context.Context, jti string) er
 	}
 	return nil
 }
+
+func (t *TokenRepository) ExtendRefreshTokenTTL(ctx context.Context, jti string, ttl time.Duration) error {
+	pattern := fmt.Sprintf("refresh:*:%s", jti)
+	keys, err := t.client.Keys(ctx, pattern).Result()
+	if err != nil {
+		return fmt.Errorf("failed to find token keys: %w", err)
+	}
+	if len(keys) == 0 {
+		return fmt.Errorf("refresh token not found")
+	}
+	return t.client.Expire(ctx, keys[0], ttl).Err()
+}

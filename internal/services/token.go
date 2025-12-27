@@ -160,3 +160,46 @@ func (t *TokenService) RevokeToken(ctx context.Context, refreshToken string) err
 	}
 	return t.repo.DeleteRefreshToken(ctx, claims.JTI)
 }
+
+func (t *TokenService) RefreshAccessToken(ctx context.Context, refreshToken string) (*domain.TokenPair, error) {
+	claims, err := t.ValidateRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid refresh token: %w", err)
+	}
+	metadata, err := t.repo.GetRefreshToken(ctx, claims.JTI)
+	if err != nil || metadata == nil {
+		return nil, fmt.Errorf("refresh token not found")
+	}
+	if time.Now().After(metadata.AbsoluteExpireAt) {
+		return nil, fmt.Errorf("session expired")
+	}
+
+	ttl := time.Duration(t.config.RefreshTTL) * 24 * time.Hour
+
+	desiredExpiry := time.Now().Add(ttl)
+	if desiredExpiry.After(metadata.AbsoluteExpireAt) {
+		ttl = metadata.AbsoluteExpireAt.Sub(time.Now())
+	}
+
+	err = t.repo.ExtendRefreshTokenTTL(ctx, claims.JTI, ttl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extend token: %w", err)
+	}
+
+	userIDInt, _ := strconv.Atoi(claims.UserID)
+	user := &domain.User{
+		ID:    userIDInt,
+		Email: claims.Email,
+		Role:  claims.Role,
+	}
+	accessJTI := uuid.New().String()
+	accessToken, err := t.generateAccessToken(user, accessJTI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+	return &domain.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int64(t.config.AccessTTL * 60),
+	}, nil
+}

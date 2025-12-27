@@ -65,3 +65,7 @@ func (s *UserService) Login(ctx context.Context, login, email, password string) 
 func (s *UserService) Logout(ctx context.Context, refreshToken string) error {
 	return s.tokenService.RevokeToken(ctx, refreshToken)
 }
+
+func (s *UserService) Refresh(ctx context.Context, refreshToken string) (*domain.TokenPair, error) {
+	return s.tokenService.RefreshAccessToken(ctx, refreshToken)
+}

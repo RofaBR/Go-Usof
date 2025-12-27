@@ -31,7 +31,7 @@ type RefreshTokenMetadata struct {
 type TokenRepository interface {
 	StoreRefreshToken(ctx context.Context, metadata *RefreshTokenMetadata, ttl time.Duration) error
 	GetRefreshToken(ctx context.Context, jti string) (*RefreshTokenMetadata, error)
-	//ExtendRefreshTokenTTL(ctx context.Context, jti string, ttl time.Duration) error
+	ExtendRefreshTokenTTL(ctx context.Context, jti string, ttl time.Duration) error
 	DeleteRefreshToken(ctx context.Context, jti string) error
 }
 
@@ -41,7 +41,7 @@ type TokenService interface {
 	ValidateAccessToken(ctx context.Context, token string) (*TokenClaims, error)
 	ValidateRefreshToken(ctx context.Context, token string) (*TokenClaims, error)
 
-	//RefreshAccessToken(ctx context.Context, refreshToken string) (*TokenPair, error)
+	RefreshAccessToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 
 	RevokeToken(ctx context.Context, refreshToken string) error
 }
