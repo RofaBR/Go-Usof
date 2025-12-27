@@ -4,31 +4,41 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type Config struct {
-	Port        string
-	LogLevel    string // Log level: "debug", "info", "warn", "error"
-	Mode        string // Gin mode: "debug", "release", "test"
-	DatabaseURL string
-	Redis       RedisConfig
-	JWT         JWTConfig
+	Port        string       `validate:"required"`
+	LogLevel    string       `validate:"required,oneof=debug, info warn error"`
+	Mode        string       `validate:"required,oneof=debug release test"`
+	DatabaseURL string       `validate:"required"`
+	Redis       RedisConfig  `validate:"required"`
+	JWT         JWTConfig    `validate:"required"`
+	Sender      SenderConfig `validate:"required"`
 }
 
 type RedisConfig struct {
-	Host     string
-	Port     string
+	Host     string `validate:"required"`
+	Port     string `validate:"required,numeric"`
 	Password string
-	DB       int
+	DB       int `validate:"required"`
 }
 
 type JWTConfig struct {
-	AccessSecret  string
-	RefreshSecret string
-	AccessTTL     int
-	RefreshTTL    int
-	RefreshMaxTTL int
+	AccessSecret  string `validate:"required"`
+	RefreshSecret string `validate:"required"`
+	AccessTTL     int    `validate:"required,gt=0"`
+	RefreshTTL    int    `validate:"required,gt=0"`
+	RefreshMaxTTL int    `validate:"required,gt=0,gtefield=RefreshTTL"`
 }
+
+type SenderConfig struct {
+	fromEmail string `validate:"required,email"`
+	Password  string `validate:"required"`
+}
+
+var validate = validator.New()
 
 func New() (*Config, error) {
 	config := &Config{
@@ -49,6 +59,10 @@ func New() (*Config, error) {
 			RefreshTTL:    getEnvAsInt("JWT_REFRESH_TTL", 7),
 			RefreshMaxTTL: getEnvAsInt("JWT_REFRESH_MAX_TTL", 30),
 		},
+		Sender: SenderConfig{
+			fromEmail: getEnv("SENDER_EMAIL", ""),
+			Password:  getEnv("SENDER_PASSWORD", ""),
+		},
 	}
 
 	if err := config.validate(); err != nil {
@@ -59,51 +73,19 @@ func New() (*Config, error) {
 }
 
 func (c *Config) validate() error {
-	if c.Port == "" {
-		return fmt.Errorf("port is required")
+	if err := validate.Struct(c); err != nil {
+		return formatValidationErrors(err)
 	}
-
-	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
-	if !validLogLevels[c.LogLevel] {
-		return fmt.Errorf("invalid log level: %s (must be debug, info, warn, or error)", c.LogLevel)
-	}
-
-	validModes := map[string]bool{"debug": true, "release": true, "test": true}
-	if !validModes[c.Mode] {
-		return fmt.Errorf("invalid mode: %s (must be debug, release, or test)", c.Mode)
-	}
-
-	if c.DatabaseURL == "" {
-		return fmt.Errorf("database URL is required")
-	}
-
-	if c.Redis.Host == "" {
-		return fmt.Errorf("redis host is required")
-	}
-	if c.Redis.Port == "" {
-		return fmt.Errorf("redis port is required")
-	}
-	if c.Redis.DB < 0 || c.Redis.DB > 15 {
-		return fmt.Errorf("redis DB must be between 0 and 15")
-	}
-
-	if c.JWT.AccessSecret == "" {
-		return fmt.Errorf("JWT access secret is required")
-	}
-	if c.JWT.RefreshSecret == "" {
-		return fmt.Errorf("JWT refresh secret is required")
-	}
-	if c.JWT.AccessTTL <= 0 {
-		return fmt.Errorf("JWT access TTL must be positive")
-	}
-	if c.JWT.RefreshTTL <= 0 {
-		return fmt.Errorf("JWT refresh TTL must be positive")
-	}
-	if c.JWT.RefreshMaxTTL <= 0 {
-		return fmt.Errorf("JWT refresh max TTL must be positive")
-	}
-
 	return nil
+}
+
+func formatValidationErrors(err error) error {
+	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		for _, err := range validationErrors {
+			return fmt.Errorf("%s: validation failed on '%s' tag", err.Field(), err.Tag())
+		}
+	}
+	return err
 }
 
 func getEnv(key, defaultValue string) string {
