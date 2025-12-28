@@ -34,8 +34,10 @@ type JWTConfig struct {
 }
 
 type SenderConfig struct {
-	fromEmail string `validate:"required,email"`
+	FromEmail string `validate:"required,email"`
 	Password  string `validate:"required"`
+	SMTPHost  string `validate:"required"`
+	SMTPPort  int    `validate:"required,min=1,max=65535"`
 }
 
 var validate = validator.New()
@@ -60,8 +62,10 @@ func New() (*Config, error) {
 			RefreshMaxTTL: getEnvAsInt("JWT_REFRESH_MAX_TTL", 30),
 		},
 		Sender: SenderConfig{
-			fromEmail: getEnv("SENDER_EMAIL", ""),
+			FromEmail: getEnv("SENDER_EMAIL", ""),
 			Password:  getEnv("SENDER_PASSWORD", ""),
+			SMTPHost:  getEnv("SMTP_HOST", "smtp.gmail.com"),
+			SMTPPort:  getEnvAsInt("SMTP_PORT", 587),
 		},
 	}
 
