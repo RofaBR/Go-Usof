@@ -37,6 +37,8 @@ services:
       REDIS_DB: 0
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      SENDER_EMAIL: ${SENDER_EMAIL}
+      SENDER_PASSWORD: ${SENDER_PASSWORD}
     ports:
       - "${PORT:-8080}:8080"
     networks:

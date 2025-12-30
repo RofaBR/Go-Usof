@@ -7,6 +7,8 @@ toolchain go1.24.9
 require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/gin-gonic/gin v1.11.0
+	github.com/go-playground/validator/v10 v10.28.0
+	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
@@ -16,6 +18,7 @@ require (
 	github.com/stephenafamo/bob v0.42.0
 	golang.org/x/crypto v0.45.0
 	golang.org/x/net v0.47.0
+	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
 require (
@@ -30,7 +33,6 @@ require (
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.28.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -58,4 +60,5 @@ require (
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )

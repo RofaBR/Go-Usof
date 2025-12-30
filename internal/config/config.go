@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	Port        string       `validate:"required"`
-	LogLevel    string       `validate:"required,oneof=debug, info warn error"`
+	LogLevel    string       `validate:"required,oneof=debug info warn error"`
 	Mode        string       `validate:"required,oneof=debug release test"`
 	DatabaseURL string       `validate:"required"`
 	Redis       RedisConfig  `validate:"required"`
@@ -22,7 +22,7 @@ type RedisConfig struct {
 	Host     string `validate:"required"`
 	Port     string `validate:"required,numeric"`
 	Password string
-	DB       int `validate:"required"`
+	DB       int `validate:"gte=0"`
 }
 
 type JWTConfig struct {
