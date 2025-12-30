@@ -13,7 +13,7 @@ type Service struct {
 func NewServices(log *logger.Logger, repos *repositories.Repository, config *config.Config) *Service {
 	tokenSvc := NewTokenService(repos.Token, config.JWT)
 	mailSenderSvc := NewSMPTSender(config.Sender)
-	userSvc := NewUserService(repos.User, tokenSvc, mailSenderSvc)
+	userSvc := NewUserService(repos.User, tokenSvc, mailSenderSvc, log)
 
 	return &Service{
 		User: userSvc,
