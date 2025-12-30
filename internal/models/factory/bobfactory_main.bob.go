@@ -72,6 +72,7 @@ func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
 	o.Role = func() enums.UserRole { return m.Role }
 	o.Password = func() string { return m.Password }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
+	o.EmailVerified = func() bool { return m.EmailVerified }
 
 	return o
 }

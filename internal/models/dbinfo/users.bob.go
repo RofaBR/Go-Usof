@@ -87,6 +87,15 @@ var Users = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		EmailVerified: column{
+			Name:      "email_verified",
+			DBType:    "boolean",
+			Default:   "false",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 	},
 	Indexes: userIndexes{
 		UsersPkey: index{
@@ -142,19 +151,20 @@ var Users = Table[
 }
 
 type userColumns struct {
-	ID        column
-	Login     column
-	Email     column
-	Fullname  column
-	Rating    column
-	Role      column
-	Password  column
-	CreatedAt column
+	ID            column
+	Login         column
+	Email         column
+	Fullname      column
+	Rating        column
+	Role          column
+	Password      column
+	CreatedAt     column
+	EmailVerified column
 }
 
 func (c userColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.Login, c.Email, c.Fullname, c.Rating, c.Role, c.Password, c.CreatedAt,
+		c.ID, c.Login, c.Email, c.Fullname, c.Rating, c.Role, c.Password, c.CreatedAt, c.EmailVerified,
 	}
 }
 

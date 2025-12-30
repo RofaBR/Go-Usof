@@ -21,14 +21,15 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID        int64          `db:"id,pk" `
-	Login     string         `db:"login" `
-	Email     string         `db:"email" `
-	Fullname  string         `db:"fullname" `
-	Rating    int32          `db:"rating" `
-	Role      enums.UserRole `db:"role" `
-	Password  string         `db:"password" `
-	CreatedAt time.Time      `db:"created_at" `
+	ID            int64          `db:"id,pk" `
+	Login         string         `db:"login" `
+	Email         string         `db:"email" `
+	Fullname      string         `db:"fullname" `
+	Rating        int32          `db:"rating" `
+	Role          enums.UserRole `db:"role" `
+	Password      string         `db:"password" `
+	CreatedAt     time.Time      `db:"created_at" `
+	EmailVerified bool           `db:"email_verified" `
 }
 
 // UserSlice is an alias for a slice of pointers to User.
@@ -44,31 +45,33 @@ type UsersQuery = *psql.ViewQuery[*User, UserSlice]
 func buildUserColumns(alias string) userColumns {
 	return userColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "login", "email", "fullname", "rating", "role", "password", "created_at",
+			"id", "login", "email", "fullname", "rating", "role", "password", "created_at", "email_verified",
 		).WithParent("users"),
-		tableAlias: alias,
-		ID:         psql.Quote(alias, "id"),
-		Login:      psql.Quote(alias, "login"),
-		Email:      psql.Quote(alias, "email"),
-		Fullname:   psql.Quote(alias, "fullname"),
-		Rating:     psql.Quote(alias, "rating"),
-		Role:       psql.Quote(alias, "role"),
-		Password:   psql.Quote(alias, "password"),
-		CreatedAt:  psql.Quote(alias, "created_at"),
+		tableAlias:    alias,
+		ID:            psql.Quote(alias, "id"),
+		Login:         psql.Quote(alias, "login"),
+		Email:         psql.Quote(alias, "email"),
+		Fullname:      psql.Quote(alias, "fullname"),
+		Rating:        psql.Quote(alias, "rating"),
+		Role:          psql.Quote(alias, "role"),
+		Password:      psql.Quote(alias, "password"),
+		CreatedAt:     psql.Quote(alias, "created_at"),
+		EmailVerified: psql.Quote(alias, "email_verified"),
 	}
 }
 
 type userColumns struct {
 	expr.ColumnsExpr
-	tableAlias string
-	ID         psql.Expression
-	Login      psql.Expression
-	Email      psql.Expression
-	Fullname   psql.Expression
-	Rating     psql.Expression
-	Role       psql.Expression
-	Password   psql.Expression
-	CreatedAt  psql.Expression
+	tableAlias    string
+	ID            psql.Expression
+	Login         psql.Expression
+	Email         psql.Expression
+	Fullname      psql.Expression
+	Rating        psql.Expression
+	Role          psql.Expression
+	Password      psql.Expression
+	CreatedAt     psql.Expression
+	EmailVerified psql.Expression
 }
 
 func (c userColumns) Alias() string {
@@ -83,18 +86,19 @@ func (userColumns) AliasedAs(alias string) userColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type UserSetter struct {
-	ID        omit.Val[int64]          `db:"id,pk" `
-	Login     omit.Val[string]         `db:"login" `
-	Email     omit.Val[string]         `db:"email" `
-	Fullname  omit.Val[string]         `db:"fullname" `
-	Rating    omit.Val[int32]          `db:"rating" `
-	Role      omit.Val[enums.UserRole] `db:"role" `
-	Password  omit.Val[string]         `db:"password" `
-	CreatedAt omit.Val[time.Time]      `db:"created_at" `
+	ID            omit.Val[int64]          `db:"id,pk" `
+	Login         omit.Val[string]         `db:"login" `
+	Email         omit.Val[string]         `db:"email" `
+	Fullname      omit.Val[string]         `db:"fullname" `
+	Rating        omit.Val[int32]          `db:"rating" `
+	Role          omit.Val[enums.UserRole] `db:"role" `
+	Password      omit.Val[string]         `db:"password" `
+	CreatedAt     omit.Val[time.Time]      `db:"created_at" `
+	EmailVerified omit.Val[bool]           `db:"email_verified" `
 }
 
 func (s UserSetter) SetColumns() []string {
-	vals := make([]string, 0, 8)
+	vals := make([]string, 0, 9)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -118,6 +122,9 @@ func (s UserSetter) SetColumns() []string {
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
+	}
+	if s.EmailVerified.IsValue() {
+		vals = append(vals, "email_verified")
 	}
 	return vals
 }
@@ -147,6 +154,9 @@ func (s UserSetter) Overwrite(t *User) {
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
 	}
+	if s.EmailVerified.IsValue() {
+		t.EmailVerified = s.EmailVerified.MustGet()
+	}
 }
 
 func (s *UserSetter) Apply(q *dialect.InsertQuery) {
@@ -155,7 +165,7 @@ func (s *UserSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 8)
+		vals := make([]bob.Expression, 9)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -204,6 +214,12 @@ func (s *UserSetter) Apply(q *dialect.InsertQuery) {
 			vals[7] = psql.Raw("DEFAULT")
 		}
 
+		if s.EmailVerified.IsValue() {
+			vals[8] = psql.Arg(s.EmailVerified.MustGet())
+		} else {
+			vals[8] = psql.Raw("DEFAULT")
+		}
+
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
 	}))
 }
@@ -213,7 +229,7 @@ func (s UserSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s UserSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 8)
+	exprs := make([]bob.Expression, 0, 9)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -268,6 +284,13 @@ func (s UserSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "created_at")...),
 			psql.Arg(s.CreatedAt),
+		}})
+	}
+
+	if s.EmailVerified.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "email_verified")...),
+			psql.Arg(s.EmailVerified),
 		}})
 	}
 
@@ -497,14 +520,15 @@ func (o UserSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 }
 
 type userWhere[Q psql.Filterable] struct {
-	ID        psql.WhereMod[Q, int64]
-	Login     psql.WhereMod[Q, string]
-	Email     psql.WhereMod[Q, string]
-	Fullname  psql.WhereMod[Q, string]
-	Rating    psql.WhereMod[Q, int32]
-	Role      psql.WhereMod[Q, enums.UserRole]
-	Password  psql.WhereMod[Q, string]
-	CreatedAt psql.WhereMod[Q, time.Time]
+	ID            psql.WhereMod[Q, int64]
+	Login         psql.WhereMod[Q, string]
+	Email         psql.WhereMod[Q, string]
+	Fullname      psql.WhereMod[Q, string]
+	Rating        psql.WhereMod[Q, int32]
+	Role          psql.WhereMod[Q, enums.UserRole]
+	Password      psql.WhereMod[Q, string]
+	CreatedAt     psql.WhereMod[Q, time.Time]
+	EmailVerified psql.WhereMod[Q, bool]
 }
 
 func (userWhere[Q]) AliasedAs(alias string) userWhere[Q] {
@@ -513,13 +537,14 @@ func (userWhere[Q]) AliasedAs(alias string) userWhere[Q] {
 
 func buildUserWhere[Q psql.Filterable](cols userColumns) userWhere[Q] {
 	return userWhere[Q]{
-		ID:        psql.Where[Q, int64](cols.ID),
-		Login:     psql.Where[Q, string](cols.Login),
-		Email:     psql.Where[Q, string](cols.Email),
-		Fullname:  psql.Where[Q, string](cols.Fullname),
-		Rating:    psql.Where[Q, int32](cols.Rating),
-		Role:      psql.Where[Q, enums.UserRole](cols.Role),
-		Password:  psql.Where[Q, string](cols.Password),
-		CreatedAt: psql.Where[Q, time.Time](cols.CreatedAt),
+		ID:            psql.Where[Q, int64](cols.ID),
+		Login:         psql.Where[Q, string](cols.Login),
+		Email:         psql.Where[Q, string](cols.Email),
+		Fullname:      psql.Where[Q, string](cols.Fullname),
+		Rating:        psql.Where[Q, int32](cols.Rating),
+		Role:          psql.Where[Q, enums.UserRole](cols.Role),
+		Password:      psql.Where[Q, string](cols.Password),
+		CreatedAt:     psql.Where[Q, time.Time](cols.CreatedAt),
+		EmailVerified: psql.Where[Q, bool](cols.EmailVerified),
 	}
 }

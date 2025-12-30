@@ -36,14 +36,15 @@ func (mods UserModSlice) Apply(ctx context.Context, n *UserTemplate) {
 // UserTemplate is an object representing the database table.
 // all columns are optional and should be set by mods
 type UserTemplate struct {
-	ID        func() int64
-	Login     func() string
-	Email     func() string
-	Fullname  func() string
-	Rating    func() int32
-	Role      func() enums.UserRole
-	Password  func() string
-	CreatedAt func() time.Time
+	ID            func() int64
+	Login         func() string
+	Email         func() string
+	Fullname      func() string
+	Rating        func() int32
+	Role          func() enums.UserRole
+	Password      func() string
+	CreatedAt     func() time.Time
+	EmailVerified func() bool
 
 	f *Factory
 
@@ -98,6 +99,10 @@ func (o UserTemplate) BuildSetter() *models.UserSetter {
 		val := o.CreatedAt()
 		m.CreatedAt = omit.From(val)
 	}
+	if o.EmailVerified != nil {
+		val := o.EmailVerified()
+		m.EmailVerified = omit.From(val)
+	}
 
 	return m
 }
@@ -143,6 +148,9 @@ func (o UserTemplate) Build() *models.User {
 	}
 	if o.CreatedAt != nil {
 		m.CreatedAt = o.CreatedAt()
+	}
+	if o.EmailVerified != nil {
+		m.EmailVerified = o.EmailVerified()
 	}
 
 	o.setModelRels(m)
@@ -288,6 +296,7 @@ func (m userMods) RandomizeAllColumns(f *faker.Faker) UserMod {
 		UserMods.RandomRole(f),
 		UserMods.RandomPassword(f),
 		UserMods.RandomCreatedAt(f),
+		UserMods.RandomEmailVerified(f),
 	}
 }
 
@@ -535,6 +544,37 @@ func (m userMods) RandomCreatedAt(f *faker.Faker) UserMod {
 	return UserModFunc(func(_ context.Context, o *UserTemplate) {
 		o.CreatedAt = func() time.Time {
 			return random_time_Time(f)
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m userMods) EmailVerified(val bool) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.EmailVerified = func() bool { return val }
+	})
+}
+
+// Set the Column from the function
+func (m userMods) EmailVerifiedFunc(f func() bool) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.EmailVerified = f
+	})
+}
+
+// Clear any values for the column
+func (m userMods) UnsetEmailVerified() UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.EmailVerified = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+func (m userMods) RandomEmailVerified(f *faker.Faker) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.EmailVerified = func() bool {
+			return random_bool(f)
 		}
 	})
 }
