@@ -4,33 +4,11 @@ import (
 	"net/http"
 
 	"github.com/RofaBR/Go-Usof/internal/domain"
+	"github.com/RofaBR/Go-Usof/internal/dto/request"
+	"github.com/RofaBR/Go-Usof/internal/dto/response"
 	"github.com/RofaBR/Go-Usof/internal/services"
 	"github.com/gin-gonic/gin"
 )
-
-type CreateUserDTO struct {
-	Login    string `json:"login" binding:"required,min=3,max=20"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6,max=20"`
-	FullName string `json:"full_name,omitempty"`
-}
-
-type UpdateUserDTO struct {
-	FullName *string `json:"full_name,omitempty"`
-	Email    *string `json:"email,omitempty" binding:"omitempty,email"`
-	Avatar   *string `json:"avatar,omitempty"`
-}
-
-type LoginUserDTO struct {
-	Login    string `json:"login" binding:"required,min=3,max=20"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6,max=20"`
-}
-
-type AuthResponse struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int64  `json:"expires_in"`
-}
 
 type AuthHandler struct {
 	service *services.UserService
@@ -41,7 +19,7 @@ func NewAuthHandler(service *services.UserService) *AuthHandler {
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
-	var req CreateUserDTO
+	var req request.Register
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -66,12 +44,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req LoginUserDTO
+	var req request.Login
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	tokenPair, err := h.service.Login(c.Request.Context(), req.Login, req.Email, req.Password)
+	tokenPair, err := h.service.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})
 		return
@@ -87,7 +65,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		true,
 	)
 
-	c.JSON(http.StatusOK, AuthResponse{
+	c.JSON(http.StatusOK, response.Auth{
 		AccessToken: tokenPair.AccessToken,
 		ExpiresIn:   tokenPair.ExpiresIn,
 	})
@@ -121,8 +99,25 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, response.Auth{
+		AccessToken: tokenPair.AccessToken,
+		ExpiresIn:   tokenPair.ExpiresIn,
+	})
+}
+
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Token parameter is required"})
+		return
+	}
+
+	if err := h.service.VerifyEmail(c.Request.Context(), token); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"access_token": tokenPair.AccessToken,
-		"expires_in":   tokenPair.ExpiresIn,
+		"message": "Email verified successfully",
 	})
 }
