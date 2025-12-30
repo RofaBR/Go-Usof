@@ -203,3 +203,41 @@ func (t *TokenService) RefreshAccessToken(ctx context.Context, refreshToken stri
 		ExpiresIn:    int64(t.config.AccessTTL * 60),
 	}, nil
 }
+
+func (t *TokenService) GenerateVerificationToken(ctx context.Context, email string) (string, error) {
+	token := uuid.New().String()
+
+	metadata := &domain.VerificationTokenMetadata{
+		Email:     email,
+		Token:     token,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+
+	ttl := 24 * time.Hour
+	if err := t.repo.StoreVerificationToken(ctx, metadata, ttl); err != nil {
+		return "", fmt.Errorf("failed to store verification token: %w", err)
+	}
+
+	return token, nil
+}
+
+func (t *TokenService) ValidateVerificationToken(ctx context.Context, token string) (string, error) {
+	metadata, err := t.repo.GetVerificationToken(ctx, token)
+	if err != nil {
+		return "", fmt.Errorf("failed to get verification token: %w", err)
+	}
+	if metadata == nil {
+		return "", fmt.Errorf("verification token not found or expired")
+	}
+
+	if time.Now().After(metadata.ExpiresAt) {
+		return "", fmt.Errorf("verification token expired")
+	}
+
+	return metadata.Email, nil
+}
+
+func (t *TokenService) DeleteVerificationToken(ctx context.Context, token string) error {
+	return t.repo.DeleteVerificationToken(ctx, token)
+}
