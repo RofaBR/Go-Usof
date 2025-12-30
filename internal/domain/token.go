@@ -28,11 +28,22 @@ type RefreshTokenMetadata struct {
 	AbsoluteExpireAt time.Time `json:"absolute_expire_at"`
 }
 
+type VerificationTokenMetadata struct {
+	Email     string    `json:"email"`
+	Token     string    `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
 type TokenRepository interface {
 	StoreRefreshToken(ctx context.Context, metadata *RefreshTokenMetadata, ttl time.Duration) error
 	GetRefreshToken(ctx context.Context, jti string) (*RefreshTokenMetadata, error)
 	ExtendRefreshTokenTTL(ctx context.Context, jti string, ttl time.Duration) error
 	DeleteRefreshToken(ctx context.Context, jti string) error
+
+	StoreVerificationToken(ctx context.Context, metadata *VerificationTokenMetadata, ttl time.Duration) error
+	GetVerificationToken(ctx context.Context, token string) (*VerificationTokenMetadata, error)
+	DeleteVerificationToken(ctx context.Context, token string) error
 }
 
 type TokenService interface {
@@ -44,4 +55,8 @@ type TokenService interface {
 	RefreshAccessToken(ctx context.Context, refreshToken string) (*TokenPair, error)
 
 	RevokeToken(ctx context.Context, refreshToken string) error
+
+	GenerateVerificationToken(ctx context.Context, email string) (string, error)
+	ValidateVerificationToken(ctx context.Context, token string) (string, error)
+	DeleteVerificationToken(ctx context.Context, token string) error
 }

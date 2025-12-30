@@ -77,3 +77,38 @@ func (t *TokenRepository) ExtendRefreshTokenTTL(ctx context.Context, jti string,
 	}
 	return t.client.Expire(ctx, keys[0], ttl).Err()
 }
+
+func (t *TokenRepository) StoreVerificationToken(ctx context.Context, metadata *domain.VerificationTokenMetadata, ttl time.Duration) error {
+	key := fmt.Sprintf("verification:%s", metadata.Token)
+
+	data, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal verification token metadata: %w", err)
+	}
+
+	return t.client.Set(ctx, key, data, ttl).Err()
+}
+
+func (t *TokenRepository) GetVerificationToken(ctx context.Context, token string) (*domain.VerificationTokenMetadata, error) {
+	key := fmt.Sprintf("verification:%s", token)
+
+	data, err := t.client.Get(ctx, key).Result()
+	if err == goredis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get verification token: %w", err)
+	}
+
+	var metadata domain.VerificationTokenMetadata
+	if err := json.Unmarshal([]byte(data), &metadata); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal verification token metadata: %w", err)
+	}
+
+	return &metadata, nil
+}
+
+func (t *TokenRepository) DeleteVerificationToken(ctx context.Context, token string) error {
+	key := fmt.Sprintf("verification:%s", token)
+	return t.client.Del(ctx, key).Err()
+}

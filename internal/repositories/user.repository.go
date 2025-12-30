@@ -100,9 +100,10 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]*domain.User, error) {
 
 func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	setter := &models.UserSetter{
-		Email:    omit.From(user.Email),
-		Password: omit.From(user.Password),
-		Fullname: omit.From(user.FullName),
+		Email:         omit.From(user.Email),
+		Password:      omit.From(user.Password),
+		Fullname:      omit.From(user.FullName),
+		EmailVerified: omit.From(user.EmailVerified),
 	}
 
 	query := models.Users.Update(
@@ -138,12 +139,13 @@ func (r *UserRepository) Delete(ctx context.Context, id int) error {
 
 func mapModelToDomain(m *models.User) *domain.User {
 	return &domain.User{
-		ID:       int(m.ID),
-		Login:    m.Login,
-		Email:    m.Email,
-		Password: m.Password,
-		FullName: m.Fullname,
-		Role:     string(m.Role),
-		Rating:   int(m.Rating),
+		ID:            int(m.ID),
+		Login:         m.Login,
+		Email:         m.Email,
+		Password:      m.Password,
+		FullName:      m.Fullname,
+		Role:          string(m.Role),
+		Rating:        int(m.Rating),
+		EmailVerified: m.EmailVerified,
 	}
 }

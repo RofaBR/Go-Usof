@@ -3,14 +3,15 @@ package domain
 import "context"
 
 type User struct {
-	ID       int    `json:"id"`
-	Login    string `json:"login"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
-	FullName string `json:"full_name"`
-	Password string `json:"-"`
-	Rating   int    `json:"rating"`
-	Avatar   string `json:"avatar"`
+	ID            int    `json:"id"`
+	Login         string `json:"login"`
+	Email         string `json:"email"`
+	Role          string `json:"role"`
+	FullName      string `json:"full_name"`
+	Password      string `json:"-"`
+	Rating        int    `json:"rating"`
+	Avatar        string `json:"avatar"`
+	EmailVerified bool   `json:"email_verified"`
 }
 
 type UserRepository interface {
