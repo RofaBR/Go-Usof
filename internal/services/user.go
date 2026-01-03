@@ -11,31 +11,26 @@ import (
 )
 
 type UserService struct {
-	repo               domain.UserRepository
-	tokenService       domain.TokenService
-	emailSenderService domain.EmailSender
-	log                *logger.Logger
+	repo domain.UserRepository
+	log  *logger.Logger
 }
 
-func NewUserService(repo domain.UserRepository, tokenService domain.TokenService, EmailSenderService domain.EmailSender, log *logger.Logger) *UserService {
+func NewUserService(repo domain.UserRepository, log *logger.Logger) *UserService {
 	return &UserService{
-		repo:               repo,
-		tokenService:       tokenService,
-		emailSenderService: EmailSenderService,
-		log:                log,
+		repo: repo,
+		log:  log,
 	}
 }
 
-func (s *UserService) Register(ctx context.Context, user *domain.User) error {
-	s.log.Info("attempting user registration", "email", user.Email, "login", user.Login)
-
+func (s *UserService) Create(ctx context.Context, user *domain.User) error {
+	s.log.Info("creating user", "email", user.Email, "login", user.Login)
 	existing, err := s.repo.GetByEmail(ctx, user.Email)
 	if err != nil {
 		s.log.Error("failed to check existing user", "email", user.Email, "error", err)
 		return fmt.Errorf("database error: %v", err)
 	}
 	if existing != nil {
-		s.log.Warn("registration failed: email already exists", "email", user.Email)
+		s.log.Warn("user creation failed: email already exists", "email", user.Email)
 		return errors.New("email already taken")
 	}
 
@@ -52,91 +47,76 @@ func (s *UserService) Register(ctx context.Context, user *domain.User) error {
 	}
 
 	s.log.Info("user created successfully", "email", user.Email, "user_id", user.ID)
-
-	token, err := s.tokenService.GenerateVerificationToken(ctx, user.Email)
-	if err != nil {
-		s.log.Error("failed to generate verification token", "email", user.Email, "error", err)
-		return fmt.Errorf("failed to generate verification token: %v", err)
-	}
-
-	if err := s.emailSenderService.SendVerificationEmail(ctx, user.Email, token); err != nil {
-		s.log.Error("failed to send verification email", "email", user.Email, "error", err)
-		return fmt.Errorf("failed to send verification email: %v", err)
-	}
-
-	s.log.Info("registration completed successfully, verification email sent", "email", user.Email)
 	return nil
 }
 
-func (s *UserService) Login(ctx context.Context, email, password string) (*domain.TokenPair, error) {
-	s.log.Info("attempting user login", "email", email)
+func (s *UserService) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	s.log.Info("getting user by email", "email", email)
 
-	existing, err := s.repo.GetByEmail(ctx, email)
+	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
-		s.log.Error("failed to get user for login", "email", email, "error", err)
+		s.log.Error("failed to get user by email", "email", email, "error", err)
 		return nil, fmt.Errorf("database error: %v", err)
 	}
 
-	if existing == nil {
-		s.log.Warn("login failed: user not found", "email", email)
+	if user == nil {
+		s.log.Info("user not found", "email", email)
+		return nil, nil
+	}
+
+	s.log.Info("user retrieved successfully", "email", email, "user_id", user.ID)
+	return user, nil
+}
+
+func (s *UserService) GetByID(ctx context.Context, id int) (*domain.User, error) {
+	s.log.Info("getting user by ID", "user_id", id)
+
+	user, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		s.log.Error("failed to get user by ID", "user_id", id, "error", err)
+		return nil, fmt.Errorf("database error: %v", err)
+	}
+
+	if user == nil {
+		s.log.Info("user not found", "user_id", id)
+		return nil, nil
+	}
+
+	s.log.Info("user retrieved successfully", "user_id", id)
+	return user, nil
+}
+
+func (s *UserService) ValidateCredentials(ctx context.Context, email, password string) (*domain.User, error) {
+	s.log.Info("validating user credentials", "email", email)
+
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		s.log.Error("failed to get user for credential validation", "email", email, "error", err)
+		return nil, fmt.Errorf("database error: %v", err)
+	}
+
+	if user == nil {
+		s.log.Warn("credential validation failed: user not found", "email", email)
 		return nil, errors.New("invalid credentials")
 	}
 
-	if existing.EmailVerified == false {
-		s.log.Warn("login failed: email not verified", "email", email, "user_id", existing.ID)
+	if !user.EmailVerified {
+		s.log.Warn("credential validation failed: email not verified", "email", email, "user_id", user.ID)
 		return nil, errors.New("email not verified")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(existing.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		s.log.Warn("login failed: invalid password", "email", email, "user_id", existing.ID)
+		s.log.Warn("credential validation failed: invalid password", "email", email, "user_id", user.ID)
 		return nil, errors.New("invalid credentials")
 	}
 
-	tokenPair, err := s.tokenService.GenerateTokenPair(ctx, existing)
-	if err != nil {
-		s.log.Error("failed to generate token pair", "email", email, "user_id", existing.ID, "error", err)
-		return nil, fmt.Errorf("failed to generate tokens: %v", err)
-	}
-
-	s.log.Info("user logged in successfully", "email", email, "user_id", existing.ID)
-	return tokenPair, nil
+	s.log.Info("credentials validated successfully", "email", email, "user_id", user.ID)
+	return user, nil
 }
 
-func (s *UserService) Logout(ctx context.Context, refreshToken string) error {
-	s.log.Info("attempting user logout")
-
-	err := s.tokenService.RevokeToken(ctx, refreshToken)
-	if err != nil {
-		s.log.Error("logout failed: unable to revoke refresh token", "error", err)
-		return err
-	}
-
-	s.log.Info("user logged out successfully")
-	return nil
-}
-
-func (s *UserService) Refresh(ctx context.Context, refreshToken string) (*domain.TokenPair, error) {
-	s.log.Info("attempting token refresh")
-
-	tokenPair, err := s.tokenService.RefreshAccessToken(ctx, refreshToken)
-	if err != nil {
-		s.log.Warn("token refresh failed", "error", err)
-		return nil, err
-	}
-
-	s.log.Info("token refreshed successfully")
-	return tokenPair, nil
-}
-
-func (s *UserService) VerifyEmail(ctx context.Context, token string) error {
-	s.log.Info("attempting email verification")
-
-	email, err := s.tokenService.ValidateVerificationToken(ctx, token)
-	if err != nil {
-		s.log.Warn("email verification failed: invalid or expired token", "error", err)
-		return fmt.Errorf("invalid or expired verification token: %v", err)
-	}
+func (s *UserService) MarkEmailVerified(ctx context.Context, email string) error {
+	s.log.Info("marking email as verified", "email", email)
 
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
@@ -160,10 +140,29 @@ func (s *UserService) VerifyEmail(ctx context.Context, token string) error {
 	}
 
 	s.log.Info("email verified successfully", "email", email, "user_id", user.ID)
+	return nil
+}
 
-	if err := s.tokenService.DeleteVerificationToken(ctx, token); err != nil {
-		s.log.Warn("failed to delete verification token", "email", email, "error", err)
+func (s *UserService) Update(ctx context.Context, user *domain.User) error {
+	s.log.Info("updating user", "user_id", user.ID)
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		s.log.Error("failed to update user", "user_id", user.ID, "error", err)
+		return fmt.Errorf("database error: %v", err)
 	}
 
+	s.log.Info("user updated successfully", "user_id", user.ID)
+	return nil
+}
+
+func (s *UserService) Delete(ctx context.Context, id int) error {
+	s.log.Info("deleting user", "user_id", id)
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		s.log.Error("failed to delete user", "user_id", id, "error", err)
+		return fmt.Errorf("database error: %v", err)
+	}
+
+	s.log.Info("user deleted successfully", "user_id", id)
 	return nil
 }
