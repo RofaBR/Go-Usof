@@ -34,4 +34,9 @@ func registerAuthRoutes(rg *gin.RouterGroup, h *handler.Handler) {
 
 		auth.POST("/refresh", h.Auth.Refresh)
 	}
+
+	user := rg.Group("/user")
+	{
+		user.POST("/upload/avatar", h.User.UpdateAvatar)
+	}
 }
