@@ -39,6 +39,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       SENDER_EMAIL: ${SENDER_EMAIL}
       SENDER_PASSWORD: ${SENDER_PASSWORD}
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
     ports:
       - "${PORT:-8080}:8080"
     networks:
