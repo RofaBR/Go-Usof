@@ -10,14 +10,14 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type SMPTSender struct {
+type SMTPSender struct {
 	config config.SenderConfig
 }
 
-func NewSMPTSender(config config.SenderConfig) *SMPTSender {
-	return &SMPTSender{config: config}
+func NewSMTPSender(config config.SenderConfig) *SMTPSender {
+	return &SMTPSender{config: config}
 }
-func (s *SMPTSender) Send(ctx context.Context, email *domain.Email) error {
+func (s *SMTPSender) Send(ctx context.Context, email *domain.Email) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.config.FromEmail)
 	m.SetHeader("To", email.To)
@@ -39,7 +39,7 @@ func (s *SMPTSender) Send(ctx context.Context, email *domain.Email) error {
 	return nil
 }
 
-func (s *SMPTSender) SendVerificationEmail(ctx context.Context, email, token string) error {
+func (s *SMTPSender) SendVerificationEmail(ctx context.Context, email, token string) error {
 	baseUrl := os.Getenv("BASE_URL")
 	if baseUrl == "" {
 		baseUrl = "http://localhost:8080/api"
