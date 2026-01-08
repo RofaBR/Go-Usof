@@ -1,7 +1,5 @@
 # Go-Usof
 
-> A production-grade RESTful authentication microservice built with Go, demonstrating clean architecture principles and modern backend development practices.
-
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -181,19 +179,19 @@ Go-Usof follows **Clean Architecture** with strict layer separation:
 
 ```
 ┌─────────────────────────────────────────┐
-│   Handler Layer (HTTP Controllers)     │
+│   Handler Layer (HTTP Controllers)      │
 └────────────────┬────────────────────────┘
                  │
 ┌────────────────▼────────────────────────┐
-│   Service Layer (Business Logic)       │
+│   Service Layer (Business Logic)        │
 └────────────────┬────────────────────────┘
                  │
 ┌────────────────▼────────────────────────┐
-│   Repository Layer (Data Access)       │
+│   Repository Layer (Data Access)        │
 └────────────────┬────────────────────────┘
                  │
 ┌────────────────▼────────────────────────┐
-│   Domain Layer (Entities & Interfaces) │
+│   Domain Layer (Entities & Interfaces)  │
 └─────────────────────────────────────────┘
 ```
 
