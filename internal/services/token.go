@@ -38,7 +38,7 @@ func (t *TokenService) GenerateTokenPair(ctx context.Context, user *domain.User)
 	}
 
 	metadata := domain.RefreshTokenMetadata{
-		UserID:           strconv.Itoa(user.ID),
+		UserID:           strconv.FormatInt(user.ID, 10),
 		JTI:              refreshStr,
 		CreatedAt:        time.Now(),
 		ExpiresAt:        time.Now().Add(time.Duration(t.config.RefreshTTL) * 24 * time.Hour),
@@ -109,7 +109,7 @@ func (t *TokenService) parseToken(tokenString, secret string) (*domain.TokenClai
 
 	userID := ""
 	if val, ok := claims["user_id"].(float64); ok {
-		userID = strconv.Itoa(int(val))
+		userID = strconv.FormatInt(int64(val), 10)
 	}
 
 	return &domain.TokenClaims{
@@ -186,9 +186,12 @@ func (t *TokenService) RefreshAccessToken(ctx context.Context, refreshToken stri
 		return nil, fmt.Errorf("failed to extend token: %w", err)
 	}
 
-	userIDInt, _ := strconv.Atoi(claims.UserID)
+	userID, err := strconv.ParseInt(claims.UserID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID in token: %w", err)
+	}
 	user := &domain.User{
-		ID:    userIDInt,
+		ID:    userID,
 		Email: claims.Email,
 		Role:  claims.Role,
 	}

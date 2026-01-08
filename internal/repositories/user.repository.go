@@ -45,7 +45,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	if err != nil {
 		return fmt.Errorf("insert failed: %w", err)
 	}
-	user.ID = int(model.ID)
+	user.ID = model.ID
 
 	return nil
 }
@@ -66,7 +66,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 	return mapModelToDomain(model), nil
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int) (*domain.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	query := models.Users.Query(
 		sm.Where(models.Users.Columns.ID.EQ(psql.Arg(id))),
 	)
@@ -122,7 +122,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-func (r *UserRepository) Delete(ctx context.Context, id int) error {
+func (r *UserRepository) Delete(ctx context.Context, id int64) error {
 	query := models.Users.Delete(
 		dm.Where(models.Users.Columns.ID.EQ(psql.Arg(id))),
 	)
@@ -139,7 +139,7 @@ func (r *UserRepository) Delete(ctx context.Context, id int) error {
 
 func mapModelToDomain(m *models.User) *domain.User {
 	return &domain.User{
-		ID:            int(m.ID),
+		ID:            m.ID,
 		Login:         m.Login,
 		Email:         m.Email,
 		Password:      m.Password,

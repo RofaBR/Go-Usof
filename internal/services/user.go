@@ -68,7 +68,7 @@ func (s *UserService) GetByEmail(ctx context.Context, email string) (*domain.Use
 	return user, nil
 }
 
-func (s *UserService) GetByID(ctx context.Context, id int) (*domain.User, error) {
+func (s *UserService) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	s.log.Info("getting user by ID", "user_id", id)
 
 	user, err := s.repo.GetByID(ctx, id)
@@ -155,7 +155,7 @@ func (s *UserService) Update(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-func (s *UserService) Delete(ctx context.Context, id int) error {
+func (s *UserService) Delete(ctx context.Context, id int64) error {
 	s.log.Info("deleting user", "user_id", id)
 
 	if err := s.repo.Delete(ctx, id); err != nil {

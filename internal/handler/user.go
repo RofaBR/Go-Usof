@@ -46,7 +46,7 @@ func (h *UserHandler) UpdateAvatar(c *gin.Context) {
 	}
 	userIDStr := params.UserID
 
-	userID, err := strconv.Atoi(userIDStr)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		h.log.Error("invalid user ID format", "userId", userIDStr, "error", err)
 		c.JSON(400, gin.H{"error": "Invalid user ID"})
