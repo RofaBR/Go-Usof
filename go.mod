@@ -18,10 +18,12 @@ require (
 	github.com/stephenafamo/bob v0.42.0
 	golang.org/x/crypto v0.45.0
 	golang.org/x/net v0.47.0
+	golang.org/x/oauth2 v0.34.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
 	github.com/bytedance/sonic/loader v0.4.0 // indirect

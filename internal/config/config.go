@@ -9,14 +9,15 @@ import (
 )
 
 type Config struct {
-	Port         string       `validate:"required"`
-	LogLevel     string       `validate:"required,oneof=debug info warn error"`
-	Mode         string       `validate:"required,oneof=debug release test"`
-	DatabaseURL  string       `validate:"required"`
-	Redis        RedisConfig  `validate:"required"`
-	JWT          JWTConfig    `validate:"required"`
-	Sender       SenderConfig `validate:"required"`
+	Port          string       `validate:"required"`
+	LogLevel      string       `validate:"required,oneof=debug info warn error"`
+	Mode          string       `validate:"required,oneof=debug release test"`
+	DatabaseURL   string       `validate:"required"`
+	Redis         RedisConfig  `validate:"required"`
+	JWT           JWTConfig    `validate:"required"`
+	Sender        SenderConfig `validate:"required"`
 	CloudinaryURL string       `validate:"required"`
+	OAuth2        OAuth2Config `validate:"required"`
 }
 
 type RedisConfig struct {
@@ -41,14 +42,20 @@ type SenderConfig struct {
 	SMTPPort  int    `validate:"required,min=1,max=65535"`
 }
 
+type OAuth2Config struct {
+	ClientID     string `validate:"required"`
+	ClientSecret string `validate:"required"`
+	RedirectURI  string `validate:"required,url"`
+}
+
 var validate = validator.New()
 
 func New() (*Config, error) {
 	config := &Config{
-		Port:          getEnv("PORT", "8080"),
-		LogLevel:      getEnv("LOG_LEVEL", "info"),
-		Mode:          getEnv("GIN_MODE", "debug"),
-		DatabaseURL:   getEnv("DATABASE_URL", ""),
+		Port:        getEnv("PORT", "8080"),
+		LogLevel:    getEnv("LOG_LEVEL", "info"),
+		Mode:        getEnv("GIN_MODE", "debug"),
+		DatabaseURL: getEnv("DATABASE_URL", ""),
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
 			Port:     getEnv("REDIS_PORT", "6379"),
@@ -69,6 +76,11 @@ func New() (*Config, error) {
 			SMTPPort:  getEnvAsInt("SMTP_PORT", 587),
 		},
 		CloudinaryURL: getEnv("CLOUDINARY_URL", ""),
+		OAuth2: OAuth2Config{
+			ClientID:     getEnv("OAUTH2_CLIENT_ID", ""),
+			ClientSecret: getEnv("OAUTH2_CLIENT_SECRET", ""),
+			RedirectURI:  getEnv("OAUTH2_REDIRECT_URI", "http://localhost:8080/api/auth/google/callback"),
+		},
 	}
 
 	if err := config.validate(); err != nil {
