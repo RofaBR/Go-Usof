@@ -8,6 +8,7 @@ import (
 type Handler struct {
 	Health *HealthHandler
 	Auth   *AuthHandler
+	OAuth2 *OAuth2Handler
 	User   *UserHandler
 }
 
@@ -15,6 +16,7 @@ func NewHandler(log *logger.Logger, svc *services.Service) *Handler {
 	return &Handler{
 		Health: NewHealthHandler(log),
 		Auth:   NewAuthHandler(svc.User, svc.Token, svc.Email, log),
+		OAuth2: NewOAuth2Handler(svc.OAuth2, svc.Token, log),
 		User:   NewUserHandler(svc.User, svc.Image, svc.Token, log),
 	}
 }

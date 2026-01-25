@@ -31,6 +31,8 @@ func registerAuthRoutes(rg *gin.RouterGroup, h *handler.Handler) {
 		auth.POST("/login", h.Auth.Login)
 		auth.POST("/logout", h.Auth.Logout)
 		auth.GET("/verify", h.Auth.VerifyEmail)
+		auth.GET("/google", h.OAuth2.GoogleLogin)
+		auth.GET("/google/callback", h.OAuth2.GoogleCallback)
 
 		auth.POST("/refresh", h.Auth.Refresh)
 	}
