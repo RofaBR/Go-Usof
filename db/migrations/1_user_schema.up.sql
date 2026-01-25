@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS users (
     role user_role NOT NULL DEFAULT 'user',
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    email_verified BOOLEAN DEFAULT FALSE NOT NULL
+    email_verified BOOLEAN DEFAULT FALSE NOT NULL,
+    google_id VARCHAR(255) NULL UNIQUE
 );

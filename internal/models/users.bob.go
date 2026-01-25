@@ -9,7 +9,9 @@ import (
 	"time"
 
 	enums "github.com/RofaBR/Go-Usof/internal/models/enums"
+	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
@@ -21,15 +23,16 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID            int64          `db:"id,pk" `
-	Login         string         `db:"login" `
-	Email         string         `db:"email" `
-	Fullname      string         `db:"fullname" `
-	Rating        int32          `db:"rating" `
-	Role          enums.UserRole `db:"role" `
-	Password      string         `db:"password" `
-	CreatedAt     time.Time      `db:"created_at" `
-	EmailVerified bool           `db:"email_verified" `
+	ID            int64            `db:"id,pk" `
+	Login         string           `db:"login" `
+	Email         string           `db:"email" `
+	Fullname      string           `db:"fullname" `
+	Rating        int32            `db:"rating" `
+	Role          enums.UserRole   `db:"role" `
+	Password      string           `db:"password" `
+	CreatedAt     time.Time        `db:"created_at" `
+	EmailVerified bool             `db:"email_verified" `
+	GoogleID      null.Val[string] `db:"google_id" `
 }
 
 // UserSlice is an alias for a slice of pointers to User.
@@ -45,7 +48,7 @@ type UsersQuery = *psql.ViewQuery[*User, UserSlice]
 func buildUserColumns(alias string) userColumns {
 	return userColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "login", "email", "fullname", "rating", "role", "password", "created_at", "email_verified",
+			"id", "login", "email", "fullname", "rating", "role", "password", "created_at", "email_verified", "google_id",
 		).WithParent("users"),
 		tableAlias:    alias,
 		ID:            psql.Quote(alias, "id"),
@@ -57,6 +60,7 @@ func buildUserColumns(alias string) userColumns {
 		Password:      psql.Quote(alias, "password"),
 		CreatedAt:     psql.Quote(alias, "created_at"),
 		EmailVerified: psql.Quote(alias, "email_verified"),
+		GoogleID:      psql.Quote(alias, "google_id"),
 	}
 }
 
@@ -72,6 +76,7 @@ type userColumns struct {
 	Password      psql.Expression
 	CreatedAt     psql.Expression
 	EmailVerified psql.Expression
+	GoogleID      psql.Expression
 }
 
 func (c userColumns) Alias() string {
@@ -95,10 +100,11 @@ type UserSetter struct {
 	Password      omit.Val[string]         `db:"password" `
 	CreatedAt     omit.Val[time.Time]      `db:"created_at" `
 	EmailVerified omit.Val[bool]           `db:"email_verified" `
+	GoogleID      omitnull.Val[string]     `db:"google_id" `
 }
 
 func (s UserSetter) SetColumns() []string {
-	vals := make([]string, 0, 9)
+	vals := make([]string, 0, 10)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -125,6 +131,9 @@ func (s UserSetter) SetColumns() []string {
 	}
 	if s.EmailVerified.IsValue() {
 		vals = append(vals, "email_verified")
+	}
+	if !s.GoogleID.IsUnset() {
+		vals = append(vals, "google_id")
 	}
 	return vals
 }
@@ -157,6 +166,9 @@ func (s UserSetter) Overwrite(t *User) {
 	if s.EmailVerified.IsValue() {
 		t.EmailVerified = s.EmailVerified.MustGet()
 	}
+	if !s.GoogleID.IsUnset() {
+		t.GoogleID = s.GoogleID.MustGetNull()
+	}
 }
 
 func (s *UserSetter) Apply(q *dialect.InsertQuery) {
@@ -165,7 +177,7 @@ func (s *UserSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 9)
+		vals := make([]bob.Expression, 10)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -220,6 +232,12 @@ func (s *UserSetter) Apply(q *dialect.InsertQuery) {
 			vals[8] = psql.Raw("DEFAULT")
 		}
 
+		if !s.GoogleID.IsUnset() {
+			vals[9] = psql.Arg(s.GoogleID.MustGetNull())
+		} else {
+			vals[9] = psql.Raw("DEFAULT")
+		}
+
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
 	}))
 }
@@ -229,7 +247,7 @@ func (s UserSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s UserSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 9)
+	exprs := make([]bob.Expression, 0, 10)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -291,6 +309,13 @@ func (s UserSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "email_verified")...),
 			psql.Arg(s.EmailVerified),
+		}})
+	}
+
+	if !s.GoogleID.IsUnset() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "google_id")...),
+			psql.Arg(s.GoogleID),
 		}})
 	}
 
@@ -529,6 +554,7 @@ type userWhere[Q psql.Filterable] struct {
 	Password      psql.WhereMod[Q, string]
 	CreatedAt     psql.WhereMod[Q, time.Time]
 	EmailVerified psql.WhereMod[Q, bool]
+	GoogleID      psql.WhereNullMod[Q, string]
 }
 
 func (userWhere[Q]) AliasedAs(alias string) userWhere[Q] {
@@ -546,5 +572,6 @@ func buildUserWhere[Q psql.Filterable](cols userColumns) userWhere[Q] {
 		Password:      psql.Where[Q, string](cols.Password),
 		CreatedAt:     psql.Where[Q, time.Time](cols.CreatedAt),
 		EmailVerified: psql.Where[Q, bool](cols.EmailVerified),
+		GoogleID:      psql.WhereNull[Q, string](cols.GoogleID),
 	}
 }

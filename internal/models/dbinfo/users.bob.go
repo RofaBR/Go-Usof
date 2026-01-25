@@ -96,6 +96,15 @@ var Users = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		GoogleID: column{
+			Name:      "google_id",
+			DBType:    "character varying",
+			Default:   "NULL",
+			Comment:   "",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
 	},
 	Indexes: userIndexes{
 		UsersPkey: index{
@@ -132,6 +141,23 @@ var Users = Table[
 			Where:         "",
 			Include:       []string{},
 		},
+		UsersGoogleIDKey: index{
+			Type: "btree",
+			Name: "users_google_id_key",
+			Columns: []indexColumn{
+				{
+					Name:         "google_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:        true,
+			Comment:       "",
+			NullsFirst:    []bool{false},
+			NullsDistinct: false,
+			Where:         "",
+			Include:       []string{},
+		},
 	},
 	PrimaryKey: &constraint{
 		Name:    "users_pkey",
@@ -143,6 +169,11 @@ var Users = Table[
 		UsersEmailKey: constraint{
 			Name:    "users_email_key",
 			Columns: []string{"email"},
+			Comment: "",
+		},
+		UsersGoogleIDKey: constraint{
+			Name:    "users_google_id_key",
+			Columns: []string{"google_id"},
 			Comment: "",
 		},
 	},
@@ -160,22 +191,24 @@ type userColumns struct {
 	Password      column
 	CreatedAt     column
 	EmailVerified column
+	GoogleID      column
 }
 
 func (c userColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.Login, c.Email, c.Fullname, c.Rating, c.Role, c.Password, c.CreatedAt, c.EmailVerified,
+		c.ID, c.Login, c.Email, c.Fullname, c.Rating, c.Role, c.Password, c.CreatedAt, c.EmailVerified, c.GoogleID,
 	}
 }
 
 type userIndexes struct {
-	UsersPkey     index
-	UsersEmailKey index
+	UsersPkey        index
+	UsersEmailKey    index
+	UsersGoogleIDKey index
 }
 
 func (i userIndexes) AsSlice() []index {
 	return []index{
-		i.UsersPkey, i.UsersEmailKey,
+		i.UsersPkey, i.UsersEmailKey, i.UsersGoogleIDKey,
 	}
 }
 
@@ -186,12 +219,13 @@ func (f userForeignKeys) AsSlice() []foreignKey {
 }
 
 type userUniques struct {
-	UsersEmailKey constraint
+	UsersEmailKey    constraint
+	UsersGoogleIDKey constraint
 }
 
 func (u userUniques) AsSlice() []constraint {
 	return []constraint{
-		u.UsersEmailKey,
+		u.UsersEmailKey, u.UsersGoogleIDKey,
 	}
 }
 

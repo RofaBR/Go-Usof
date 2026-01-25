@@ -10,7 +10,9 @@ import (
 
 	models "github.com/RofaBR/Go-Usof/internal/models"
 	enums "github.com/RofaBR/Go-Usof/internal/models/enums"
+	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
 	"github.com/jaswdr/faker/v2"
 	"github.com/stephenafamo/bob"
 )
@@ -45,6 +47,7 @@ type UserTemplate struct {
 	Password      func() string
 	CreatedAt     func() time.Time
 	EmailVerified func() bool
+	GoogleID      func() null.Val[string]
 
 	f *Factory
 
@@ -103,6 +106,10 @@ func (o UserTemplate) BuildSetter() *models.UserSetter {
 		val := o.EmailVerified()
 		m.EmailVerified = omit.From(val)
 	}
+	if o.GoogleID != nil {
+		val := o.GoogleID()
+		m.GoogleID = omitnull.FromNull(val)
+	}
 
 	return m
 }
@@ -151,6 +158,9 @@ func (o UserTemplate) Build() *models.User {
 	}
 	if o.EmailVerified != nil {
 		m.EmailVerified = o.EmailVerified()
+	}
+	if o.GoogleID != nil {
+		m.GoogleID = o.GoogleID()
 	}
 
 	o.setModelRels(m)
@@ -297,6 +307,7 @@ func (m userMods) RandomizeAllColumns(f *faker.Faker) UserMod {
 		UserMods.RandomPassword(f),
 		UserMods.RandomCreatedAt(f),
 		UserMods.RandomEmailVerified(f),
+		UserMods.RandomGoogleID(f),
 	}
 }
 
@@ -575,6 +586,59 @@ func (m userMods) RandomEmailVerified(f *faker.Faker) UserMod {
 	return UserModFunc(func(_ context.Context, o *UserTemplate) {
 		o.EmailVerified = func() bool {
 			return random_bool(f)
+		}
+	})
+}
+
+// Set the model columns to this value
+func (m userMods) GoogleID(val null.Val[string]) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.GoogleID = func() null.Val[string] { return val }
+	})
+}
+
+// Set the Column from the function
+func (m userMods) GoogleIDFunc(f func() null.Val[string]) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.GoogleID = f
+	})
+}
+
+// Clear any values for the column
+func (m userMods) UnsetGoogleID() UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.GoogleID = nil
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is sometimes null
+func (m userMods) RandomGoogleID(f *faker.Faker) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.GoogleID = func() null.Val[string] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_string(f, "255")
+			return null.From(val)
+		}
+	})
+}
+
+// Generates a random value for the column using the given faker
+// if faker is nil, a default faker is used
+// The generated value is never null
+func (m userMods) RandomGoogleIDNotNull(f *faker.Faker) UserMod {
+	return UserModFunc(func(_ context.Context, o *UserTemplate) {
+		o.GoogleID = func() null.Val[string] {
+			if f == nil {
+				f = &defaultFaker
+			}
+
+			val := random_string(f, "255")
+			return null.From(val)
 		}
 	})
 }

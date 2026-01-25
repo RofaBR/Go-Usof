@@ -9,6 +9,7 @@ import (
 
 	models "github.com/RofaBR/Go-Usof/internal/models"
 	enums "github.com/RofaBR/Go-Usof/internal/models/enums"
+	"github.com/aarondl/opt/null"
 )
 
 type Factory struct {
@@ -73,6 +74,7 @@ func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
 	o.Password = func() string { return m.Password }
 	o.CreatedAt = func() time.Time { return m.CreatedAt }
 	o.EmailVerified = func() bool { return m.EmailVerified }
+	o.GoogleID = func() null.Val[string] { return m.GoogleID }
 
 	return o
 }
