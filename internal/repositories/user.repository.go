@@ -9,6 +9,7 @@ import (
 	"github.com/RofaBR/Go-Usof/internal/domain"
 	"github.com/RofaBR/Go-Usof/internal/models"
 	"github.com/RofaBR/Go-Usof/internal/models/enums"
+	"github.com/aarondl/opt/omitnull"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql/dm"
@@ -31,12 +32,14 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	setter := &models.UserSetter{
-		Login:    omit.From(user.Login),
-		Email:    omit.From(user.Email),
-		Password: omit.From(user.Password),
-		Fullname: omit.From(user.FullName),
-		Role:     omit.From(enums.UserRole(user.Role)),
-		Rating:   omit.From(int32(user.Rating)),
+		Login:         omit.From(user.Login),
+		Email:         omit.From(user.Email),
+		Password:      omit.From(user.Password),
+		Fullname:      omit.From(user.FullName),
+		Role:          omit.From(enums.UserRole(user.Role)),
+		Rating:        omit.From(int32(user.Rating)),
+		EmailVerified: omit.From(user.EmailVerified),
+		GoogleID:      omitnull.From(user.GoogleID),
 	}
 
 	query := models.Users.Insert(setter)
@@ -63,6 +66,21 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 		return nil, fmt.Errorf("database error: %w", err)
 	}
 
+	return mapModelToDomain(model), nil
+}
+
+func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error) {
+	query := models.Users.Query(
+		sm.Where(models.Users.Columns.GoogleID.EQ(psql.Arg(googleID))),
+	)
+
+	model, err := query.One(ctx, bob.NewDB(stdlib.OpenDBFromPool(r.db)))
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
 	return mapModelToDomain(model), nil
 }
 
@@ -104,6 +122,7 @@ func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 		Password:      omit.From(user.Password),
 		Fullname:      omit.From(user.FullName),
 		EmailVerified: omit.From(user.EmailVerified),
+		GoogleID:      omitnull.From(user.GoogleID),
 	}
 
 	query := models.Users.Update(
@@ -147,5 +166,6 @@ func mapModelToDomain(m *models.User) *domain.User {
 		Role:          string(m.Role),
 		Rating:        int(m.Rating),
 		EmailVerified: m.EmailVerified,
+		GoogleID:      m.GoogleID.GetOrZero(),
 	}
 }
