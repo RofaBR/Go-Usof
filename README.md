@@ -20,6 +20,8 @@ Go-Usof is a **fully functional authentication service** designed as the foundat
   - Token refresh with sliding expiration
   - Password hashing with bcrypt
   - Token revocation for logout
+  - OAuth2 login with Google
+  - Automatic account linking for existing users
 
 - **User Profile Management**
   - Avatar upload via Cloudinary CDN with face detection
@@ -58,6 +60,7 @@ Go-Usof is a **fully functional authentication service** designed as the foundat
 - **bcrypt** - Password hashing
 - **Cloudinary** v2.14.0 - Image CDN
 - **Gomail** v2 - SMTP email
+- **OAuth2** (golang.org/x/oauth2) - Google authentication
 - **Docker** & **Docker Compose** - Containerization
 
 ## Quick Start
@@ -161,6 +164,28 @@ Cookie: refresh_token=<token>
 POST /api/auth/logout
 Cookie: refresh_token=<token>
 ```
+
+### OAuth2 Authentication (`/api/auth`)
+
+**Google Login** (redirects to Google consent page)
+```http
+GET /api/auth/google
+```
+
+**Google Callback** (handles Google redirect, returns tokens)
+```http
+GET /api/auth/google/callback?code=<auth_code>&state=<state>
+
+Response:
+{
+  "access_token": "eyJhbG...",
+  "expires_in": 900
+}
++ httpOnly cookie: refresh_token
+```
+
+> **Note:** For new users, an account is automatically created using Google profile data.
+> For existing users (matched by email), the Google account is linked.
 
 ### User Management (`/api/user`)
 
@@ -266,6 +291,11 @@ SENDER_PASSWORD=your-smtp-app-password
 
 # Cloudinary
 CLOUDINARY_URL=cloudinary://key:secret@cloud-name
+
+# OAuth2 (Google)
+OAUTH2_CLIENT_ID=your-google-client-id
+OAUTH2_CLIENT_SECRET=your-google-client-secret
+OAUTH2_REDIRECT_URI=http://localhost:8080/api/auth/google/callback
 ```
 
 ## Development
