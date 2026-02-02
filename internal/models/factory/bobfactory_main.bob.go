@@ -13,12 +13,40 @@ import (
 )
 
 type Factory struct {
+	baseCategoryMods        CategoryModSlice
 	baseSchemaMigrationMods SchemaMigrationModSlice
 	baseUserMods            UserModSlice
 }
 
 func New() *Factory {
 	return &Factory{}
+}
+
+func (f *Factory) NewCategory(mods ...CategoryMod) *CategoryTemplate {
+	return f.NewCategoryWithContext(context.Background(), mods...)
+}
+
+func (f *Factory) NewCategoryWithContext(ctx context.Context, mods ...CategoryMod) *CategoryTemplate {
+	o := &CategoryTemplate{f: f}
+
+	if f != nil {
+		f.baseCategoryMods.Apply(ctx, o)
+	}
+
+	CategoryModSlice(mods).Apply(ctx, o)
+
+	return o
+}
+
+func (f *Factory) FromExistingCategory(m *models.Category) *CategoryTemplate {
+	o := &CategoryTemplate{f: f, alreadyPersisted: true}
+
+	o.ID = func() int32 { return m.ID }
+	o.Title = func() string { return m.Title }
+	o.Slug = func() string { return m.Slug }
+	o.Description = func() null.Val[string] { return m.Description }
+
+	return o
 }
 
 func (f *Factory) NewSchemaMigration(mods ...SchemaMigrationMod) *SchemaMigrationTemplate {
@@ -77,6 +105,14 @@ func (f *Factory) FromExistingUser(m *models.User) *UserTemplate {
 	o.GoogleID = func() null.Val[string] { return m.GoogleID }
 
 	return o
+}
+
+func (f *Factory) ClearBaseCategoryMods() {
+	f.baseCategoryMods = nil
+}
+
+func (f *Factory) AddBaseCategoryMod(mods ...CategoryMod) {
+	f.baseCategoryMods = append(f.baseCategoryMods, mods...)
 }
 
 func (f *Factory) ClearBaseSchemaMigrationMods() {

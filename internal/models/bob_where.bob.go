@@ -17,13 +17,16 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
+	Categories       categoryWhere[Q]
 	SchemaMigrations schemaMigrationWhere[Q]
 	Users            userWhere[Q]
 } {
 	return struct {
+		Categories       categoryWhere[Q]
 		SchemaMigrations schemaMigrationWhere[Q]
 		Users            userWhere[Q]
 	}{
+		Categories:       buildCategoryWhere[Q](Categories.Columns),
 		SchemaMigrations: buildSchemaMigrationWhere[Q](SchemaMigrations.Columns),
 		Users:            buildUserWhere[Q](Users.Columns),
 	}
