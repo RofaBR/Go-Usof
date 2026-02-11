@@ -7,11 +7,12 @@ import (
 )
 
 type Service struct {
-	User   *UserService
-	Token  *TokenService
-	Email  *SMTPSender
-	Image  *CloudinaryService
-	OAuth2 *OAuth2Service
+	User     *UserService
+	Token    *TokenService
+	Email    *SMTPSender
+	Image    *CloudinaryService
+	OAuth2   *OAuth2Service
+	Category *CategoryService
 }
 
 func NewServices(log *logger.Logger, repos *repositories.Repository, config *config.Config) *Service {
@@ -20,12 +21,14 @@ func NewServices(log *logger.Logger, repos *repositories.Repository, config *con
 	cloudinarySvc := NewCloudinaryService(config.CloudinaryURL)
 	userSvc := NewUserService(repos.User, log)
 	oauth2Svc := NewOAuth2Service(&config.OAuth2, repos.User, log)
+	CategorySvc := NewCategoryService(repos.Category, log)
 
 	return &Service{
-		User:   userSvc,
-		Token:  tokenSvc,
-		Email:  emailSvc,
-		Image:  cloudinarySvc,
-		OAuth2: oauth2Svc,
+		User:     userSvc,
+		Token:    tokenSvc,
+		Email:    emailSvc,
+		Image:    cloudinarySvc,
+		OAuth2:   oauth2Svc,
+		Category: CategorySvc,
 	}
 }
