@@ -8,6 +8,7 @@ import (
 
 	"github.com/RofaBR/Go-Usof/internal/config"
 	"github.com/RofaBR/Go-Usof/internal/handler"
+	"github.com/RofaBR/Go-Usof/internal/middleware"
 	"github.com/RofaBR/Go-Usof/internal/repositories"
 	"github.com/RofaBR/Go-Usof/internal/router"
 	"github.com/RofaBR/Go-Usof/internal/services"
@@ -57,7 +58,8 @@ func New() (*App, error) {
 	handlers := handler.NewHandler(log, svc)
 
 	gin.SetMode(cfg.Mode)
-	r := router.SetupRouter(log, handlers)
+	authMW := middleware.AuthMiddleware(svc.Token)
+	r := router.SetupRouter(log, handlers, authMW)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,

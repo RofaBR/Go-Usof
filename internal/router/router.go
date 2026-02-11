@@ -2,11 +2,12 @@ package router
 
 import (
 	"github.com/RofaBR/Go-Usof/internal/handler"
+	"github.com/RofaBR/Go-Usof/internal/middleware"
 	"github.com/RofaBR/Go-Usof/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(log *logger.Logger, h *handler.Handler) *gin.Engine {
+func SetupRouter(log *logger.Logger, h *handler.Handler, authMW gin.HandlerFunc) *gin.Engine {
 	router := gin.Default()
 
 	api := router.Group("/api")
@@ -16,6 +17,8 @@ func SetupRouter(log *logger.Logger, h *handler.Handler) *gin.Engine {
 	}
 
 	registerAuthRoutes(api, h)
+	registerUserRoutes(api, h)
+	registerCategoryRoutes(api, h, authMW)
 
 	return router
 }
@@ -33,12 +36,21 @@ func registerAuthRoutes(rg *gin.RouterGroup, h *handler.Handler) {
 		auth.GET("/verify", h.Auth.VerifyEmail)
 		auth.GET("/google", h.OAuth2.GoogleLogin)
 		auth.GET("/google/callback", h.OAuth2.GoogleCallback)
-
 		auth.POST("/refresh", h.Auth.Refresh)
 	}
+}
 
+func registerUserRoutes(rg *gin.RouterGroup, h *handler.Handler) {
 	user := rg.Group("/user")
 	{
-		user.POST("/upload/avatar", h.User.UpdateAvatar)
+		user.POST("/register", h.Auth.Register)
+	}
+}
+
+func registerCategoryRoutes(rg *gin.RouterGroup, h *handler.Handler, authMW gin.HandlerFunc) {
+	category := rg.Group("/category")
+	category.Use(authMW)
+	{
+		category.POST("/create", middleware.RoleMiddleware("admin"), h.Category.Create)
 	}
 }
